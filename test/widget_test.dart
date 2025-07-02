@@ -15,22 +15,45 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SoundSketchbookApp());
 
-    // Verify that the drawing canvas is present
-    expect(find.text('Colors'), findsOneWidget);
-    expect(find.text('Brush Size'), findsOneWidget);
+    // Verify that the drawing canvas is present with new section titles
+    expect(find.text('Color Controls'), findsOneWidget);
+    expect(find.text('Brush Size Controls'), findsOneWidget);
     expect(find.text('Clear Canvas'), findsOneWidget);
 
     // Verify that the clear button is present
     expect(find.byIcon(Icons.clear), findsOneWidget);
   });
 
-  testWidgets('Color selector is functional', (WidgetTester tester) async {
+  testWidgets('HSV color sliders are present', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SoundSketchbookApp());
 
-    // Find color selection circles (should have 4 colors)
-    final colorCircles = find.byType(GestureDetector);
-    expect(colorCircles, findsWidgets);
+    // Find HSV sliders (should have 4 sliders total: 3 HSV + 1 brush size)
+    final sliders = find.byType(Slider);
+    expect(sliders, findsNWidgets(4));
+    
+    // Check for HSV labels
+    expect(find.textContaining('🌈 Hue:'), findsOneWidget);
+    expect(find.textContaining('🎨 Saturation:'), findsOneWidget);
+    expect(find.textContaining('💡 Brightness:'), findsOneWidget);
+    expect(find.textContaining('📏 Size:'), findsOneWidget);
+  });
+
+  testWidgets('Color and brush size previews are present', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const SoundSketchbookApp());
+
+    // Check for preview labels
+    expect(find.textContaining('👁️ Preview:'), findsOneWidget);
+    expect(find.textContaining('🔴 Preview:'), findsOneWidget);
+    
+    // Check for HSV values display
+    expect(find.textContaining('H:'), findsOneWidget);
+    expect(find.textContaining('S:'), findsOneWidget);
+    expect(find.textContaining('V:'), findsOneWidget);
+    
+    // Check for brush size value display
+    expect(find.textContaining('px'), findsOneWidget);
   });
 
   testWidgets('Clear button works', (WidgetTester tester) async {
