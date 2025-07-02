@@ -148,7 +148,7 @@ class _DrawingScreenState extends State<DrawingScreen> {
 
   Widget _buildCompactColorSelector() {
     return Container(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(6.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8.0),
@@ -211,7 +211,7 @@ class _DrawingScreenState extends State<DrawingScreen> {
 
   Widget _buildCompactStrokeSelector() {
     return Container(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(6.0),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8.0),
@@ -291,43 +291,43 @@ class _DrawingScreenState extends State<DrawingScreen> {
   Widget _buildToolbar() {
     return Container(
       color: Colors.grey[100],
-      constraints: const BoxConstraints(maxHeight: 120),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth > 600;
-              
-              if (isDesktop) {
-                return Row(
-                  children: [
-                    // Color Controls (60% width)
-                    Expanded(
-                      flex: 3,
-                      child: _buildCompactColorSelector(),
-                    ),
-                    const SizedBox(width: 8),
-                    // Brush Size Controls (40% width)
-                    Expanded(
-                      flex: 2,
-                      child: _buildCompactStrokeSelector(),
-                    ),
-                  ],
-                );
-              } else {
-                // Mobile layout - keep vertical but more compact
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
+      constraints: const BoxConstraints(maxHeight: 100),
+      child: Padding(
+        padding: const EdgeInsets.all(6.0),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth > 600;
+            
+            if (isDesktop) {
+              return Row(
+                children: [
+                  // Color Controls (60% width)
+                  Expanded(
+                    flex: 3,
+                    child: _buildCompactColorSelector(),
+                  ),
+                  const SizedBox(width: 8),
+                  // Brush Size Controls (40% width)
+                  Expanded(
+                    flex: 2,
+                    child: _buildCompactStrokeSelector(),
+                  ),
+                ],
+              );
+            } else {
+              // Mobile layout - horizontal scrollable row instead of vertical column
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                   children: [
                     _buildCompactColorSelector(),
-                    const SizedBox(height: 4),
+                    const SizedBox(width: 8),
                     _buildCompactStrokeSelector(),
                   ],
-                );
-              }
-            },
-          ),
+                ),
+              );
+            }
+          },
         ),
       ),
     );
@@ -337,24 +337,26 @@ class _DrawingScreenState extends State<DrawingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Drawing canvas - takes most of the screen
-          Expanded(
-            child: DrawingCanvas(
-              strokes: _strokes,
-              currentStroke: _currentStroke,
-              selectedColor: _selectedColor,
-              selectedStrokeWidth: _selectedStrokeWidth,
-              onPanStart: _onPanStart,
-              onPanUpdate: _onPanUpdate,
-              onPanEnd: _onPanEnd,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Drawing canvas - takes most of the screen
+            Expanded(
+              child: DrawingCanvas(
+                strokes: _strokes,
+                currentStroke: _currentStroke,
+                selectedColor: _selectedColor,
+                selectedStrokeWidth: _selectedStrokeWidth,
+                onPanStart: _onPanStart,
+                onPanUpdate: _onPanUpdate,
+                onPanEnd: _onPanEnd,
+              ),
             ),
-          ),
-          
-          // Toolbar at the bottom
-          _buildToolbar(),
-        ],
+            
+            // Toolbar at the bottom
+            _buildToolbar(),
+          ],
+        ),
       ),
     );
   }

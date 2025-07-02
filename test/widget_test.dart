@@ -67,4 +67,37 @@ void main() {
     // Verify the button still exists (canvas should be cleared)
     expect(find.byIcon(Icons.clear), findsOneWidget);
   });
+
+  testWidgets('SafeArea wrapper is present in main layout', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const SoundSketchbookApp());
+
+    // Verify that SafeArea is present in the widget tree
+    expect(find.byType(SafeArea), findsOneWidget);
+  });
+
+  testWidgets('Mobile layout uses horizontal scrollable toolbar', (WidgetTester tester) async {
+    // Build our app and trigger a frame with small screen size to simulate mobile
+    await tester.binding.setSurfaceSize(const Size(400, 600));
+    await tester.pumpWidget(const SoundSketchbookApp());
+
+    // Verify that SingleChildScrollView with horizontal scroll is present
+    final horizontalScrollView = find.byWidgetPredicate(
+      (widget) => widget is SingleChildScrollView && 
+                  widget.scrollDirection == Axis.horizontal
+    );
+    expect(horizontalScrollView, findsOneWidget);
+  });
+
+  testWidgets('Toolbar height is limited to 100px', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const SoundSketchbookApp());
+
+    // Find the toolbar container with height constraint
+    final toolbarContainer = find.byWidgetPredicate(
+      (widget) => widget is Container && 
+                  widget.constraints?.maxHeight == 100.0
+    );
+    expect(toolbarContainer, findsOneWidget);
+  });
 }
