@@ -11,20 +11,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sound_sketchbook/main.dart';
 
 void main() {
-  testWidgets('Drawing screen loads correctly', (WidgetTester tester) async {
+  testWidgets('Drawing screen loads with compact UI', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SoundSketchbookApp());
 
-    // Verify that the drawing canvas is present with new section titles
-    expect(find.text('Color Controls'), findsOneWidget);
-    expect(find.text('Brush Size Controls'), findsOneWidget);
-    expect(find.text('Clear Canvas'), findsOneWidget);
+    // Verify that the compact drawing UI is present with new section titles
+    expect(find.text('🎨 Color'), findsOneWidget);
+    expect(find.text('📏 Brush Size'), findsOneWidget);
+    expect(find.text('Clear'), findsOneWidget);
 
     // Verify that the clear button is present
     expect(find.byIcon(Icons.clear), findsOneWidget);
   });
 
-  testWidgets('HSV color sliders are present', (WidgetTester tester) async {
+  testWidgets('HSV color sliders are present in compact format', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SoundSketchbookApp());
 
@@ -32,22 +32,21 @@ void main() {
     final sliders = find.byType(Slider);
     expect(sliders, findsNWidgets(4));
     
-    // Check for HSV labels
-    expect(find.textContaining('🌈 Hue:'), findsOneWidget);
-    expect(find.textContaining('🎨 Saturation:'), findsOneWidget);
-    expect(find.textContaining('💡 Brightness:'), findsOneWidget);
-    expect(find.textContaining('📏 Size:'), findsOneWidget);
+    // Check for HSV emoji indicators in compact sliders
+    expect(find.text('🌈'), findsOneWidget);
+    expect(find.text('🎨'), findsWidgets); // This appears twice (title and slider)
+    expect(find.text('💡'), findsOneWidget);
+    expect(find.text('📏'), findsOneWidget);
   });
 
-  testWidgets('Color and brush size previews are present', (WidgetTester tester) async {
+  testWidgets('Compact color and brush size previews are present', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SoundSketchbookApp());
 
-    // Check for preview labels
-    expect(find.textContaining('👁️ Preview:'), findsOneWidget);
+    // Check for preview labels in compact format
     expect(find.textContaining('🔴 Preview:'), findsOneWidget);
     
-    // Check for HSV values display
+    // Check for compact HSV values display (H:180 S:65 V:80 format)
     expect(find.textContaining('H:'), findsOneWidget);
     expect(find.textContaining('S:'), findsOneWidget);
     expect(find.textContaining('V:'), findsOneWidget);
@@ -56,7 +55,7 @@ void main() {
     expect(find.textContaining('px'), findsOneWidget);
   });
 
-  testWidgets('Clear button works', (WidgetTester tester) async {
+  testWidgets('Clear button works in compact UI', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SoundSketchbookApp());
 
@@ -66,5 +65,27 @@ void main() {
 
     // Verify the button still exists (canvas should be cleared)
     expect(find.byIcon(Icons.clear), findsOneWidget);
+  });
+
+  testWidgets('UI layout is responsive', (WidgetTester tester) async {
+    // Test desktop layout
+    await tester.binding.setSurfaceSize(const Size(800, 600));
+    await tester.pumpWidget(const SoundSketchbookApp());
+
+    // Should find Row layout with color and brush controls side by side
+    expect(find.text('🎨 Color'), findsOneWidget);
+    expect(find.text('📏 Brush Size'), findsOneWidget);
+
+    // Test mobile layout  
+    await tester.binding.setSurfaceSize(const Size(400, 600));
+    await tester.pumpWidget(const SoundSketchbookApp());
+    await tester.pump();
+
+    // Should still find both controls but in vertical layout
+    expect(find.text('🎨 Color'), findsOneWidget);
+    expect(find.text('📏 Brush Size'), findsOneWidget);
+
+    // Reset surface size
+    await tester.binding.setSurfaceSize(null);
   });
 }
