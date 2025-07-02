@@ -117,7 +117,7 @@ class _DrawingScreenState extends State<DrawingScreen> {
                         Colors.green,
                         Colors.cyan,
                         Colors.blue,
-                        Colors.magenta,
+                        Colors.purple,
                         Colors.red,
                       ],
                     ),
