@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/drawing_point.dart';
 import '../widgets/drawing_canvas.dart';
+import '../widgets/color_slider_widget.dart';
+import '../widgets/brush_size_slider.dart';
 
 class DrawingScreen extends StatefulWidget {
   const DrawingScreen({super.key});
@@ -14,20 +16,14 @@ class _DrawingScreenState extends State<DrawingScreen> {
   DrawingStroke? _currentStroke;
   int _currentStrokeId = 0;
   
-  // Drawing settings
+  // HSV color settings
+  double _hue = 0.0; // 0-360
+  double _saturation = 0.0; // 0-1
+  double _value = 0.0; // 0-1
   Color _selectedColor = Colors.black;
+  
+  // Brush size setting
   double _selectedStrokeWidth = 3.0;
-  
-  // Available colors
-  final List<Color> _availableColors = [
-    Colors.black,
-    Colors.red,
-    Colors.blue,
-    Colors.green,
-  ];
-  
-  // Available stroke widths
-  final List<double> _availableStrokeWidths = [1.0, 3.0, 5.0, 8.0];
 
   void _onPanStart(Offset position) {
     setState(() {
@@ -79,72 +75,31 @@ class _DrawingScreenState extends State<DrawingScreen> {
     });
   }
 
+  void _updateColorFromHSV() {
+    setState(() {
+      _selectedColor = HSVColor.fromAHSV(1.0, _hue, _saturation, _value).toColor();
+    });
+  }
+
+  void _setHue(double hue) {
+    _hue = hue;
+    _updateColorFromHSV();
+  }
+
+  void _setSaturation(double saturation) {
+    _saturation = saturation;
+    _updateColorFromHSV();
+  }
+
+  void _setValue(double value) {
+    _value = value;
+    _updateColorFromHSV();
+  }
+
   void _setSelectedStrokeWidth(double width) {
     setState(() {
       _selectedStrokeWidth = width;
     });
-  }
-
-  Widget _buildColorSelector() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: _availableColors.map((color) {
-          return GestureDetector(
-            onTap: () => _setSelectedColor(color),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _selectedColor == color ? Colors.grey[800]! : Colors.grey[300]!,
-                  width: _selectedColor == color ? 3.0 : 1.0,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildStrokeWidthSelector() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: _availableStrokeWidths.map((width) {
-          return GestureDetector(
-            onTap: () => _setSelectedStrokeWidth(width),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _selectedStrokeWidth == width ? Colors.grey[300] : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.grey[400]!,
-                  width: 1.0,
-                ),
-              ),
-              child: Center(
-                child: Container(
-                  width: width * 2,
-                  height: width * 2,
-                  decoration: const BoxDecoration(
-                    color: Colors.black,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
   }
 
   Widget _buildToolbar() {
@@ -154,31 +109,26 @@ class _DrawingScreenState extends State<DrawingScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Color selector
-            const Padding(
-              padding: EdgeInsets.only(top: 8.0),
-              child: Text(
-                'Colors',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+            // Color slider widget
+            ColorSliderWidget(
+              hue: _hue,
+              saturation: _saturation,
+              value: _value,
+              currentColor: _selectedColor,
+              onHueChanged: _setHue,
+              onSaturationChanged: _setSaturation,
+              onValueChanged: _setValue,
             ),
-            _buildColorSelector(),
             
-            // Stroke width selector
-            const Padding(
-              padding: EdgeInsets.only(top: 8.0),
-              child: Text(
-                'Brush Size',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+            const Divider(height: 1),
+            
+            // Brush size slider
+            BrushSizeSlider(
+              brushSize: _selectedStrokeWidth,
+              onBrushSizeChanged: _setSelectedStrokeWidth,
             ),
-            _buildStrokeWidthSelector(),
+            
+            const Divider(height: 1),
             
             // Clear button
             Padding(
@@ -206,6 +156,9 @@ class _DrawingScreenState extends State<DrawingScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
+          // Toolbar at the top
+          _buildToolbar(),
+          
           // Drawing canvas - takes most of the screen
           Expanded(
             child: DrawingCanvas(
@@ -218,9 +171,6 @@ class _DrawingScreenState extends State<DrawingScreen> {
               onPanEnd: _onPanEnd,
             ),
           ),
-          
-          // Toolbar at the bottom
-          _buildToolbar(),
         ],
       ),
     );
