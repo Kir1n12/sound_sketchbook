@@ -89,6 +89,50 @@ class _DrawingScreenState extends State<DrawingScreen> {
     });
   }
 
+  Widget _buildUnifiedPreview() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          const Text('👁️ Preview:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          const SizedBox(width: 12),
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Center(
+              child: Container(
+                width: _selectedStrokeWidth * 2,
+                height: _selectedStrokeWidth * 2,
+                decoration: BoxDecoration(
+                  color: _selectedColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Color: H:${_hsvColor.hue.round()} S:${(_hsvColor.saturation * 100).round()} V:${(_hsvColor.value * 100).round()} | Size: ${_selectedStrokeWidth.toStringAsFixed(1)}px',
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildColorSelector() {
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -217,31 +261,6 @@ class _DrawingScreenState extends State<DrawingScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          
-          // Color preview and HSV values
-          Row(
-            children: [
-              const Text('👁️ Preview:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              const SizedBox(width: 12),
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _selectedColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey[400]!, width: 2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'H:${_hsvColor.hue.round()}° S:${(_hsvColor.saturation * 100).round()}% V:${(_hsvColor.value * 100).round()}%',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -287,34 +306,6 @@ class _DrawingScreenState extends State<DrawingScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          
-          // Brush size preview
-          Row(
-            children: [
-              const Text('🔴 Preview:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              const SizedBox(width: 12),
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey[300]!),
-                ),
-                child: Center(
-                  child: Container(
-                    width: _selectedStrokeWidth * 2,
-                    height: _selectedStrokeWidth * 2,
-                    decoration: BoxDecoration(
-                      color: _selectedColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -339,6 +330,9 @@ class _DrawingScreenState extends State<DrawingScreen> {
               ),
             ),
             _buildColorSelector(),
+            
+            // Unified preview section
+            _buildUnifiedPreview(),
             
             // Stroke width selector
             const Padding(

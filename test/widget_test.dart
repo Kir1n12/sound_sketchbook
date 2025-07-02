@@ -39,20 +39,20 @@ void main() {
     expect(find.textContaining('📏 Size:'), findsOneWidget);
   });
 
-  testWidgets('Color and brush size previews are present', (WidgetTester tester) async {
+  testWidgets('Unified preview is present', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SoundSketchbookApp());
 
-    // Check for preview labels
+    // Check for unified preview label (should only find one preview now)
     expect(find.textContaining('👁️ Preview:'), findsOneWidget);
-    expect(find.textContaining('🔴 Preview:'), findsOneWidget);
+    // The old brush size preview should no longer exist
+    expect(find.textContaining('🔴 Preview:'), findsNothing);
     
-    // Check for HSV values display
-    expect(find.textContaining('H:'), findsOneWidget);
+    // Check for unified HSV and size values display
+    expect(find.textContaining('Color: H:'), findsOneWidget);
     expect(find.textContaining('S:'), findsOneWidget);
     expect(find.textContaining('V:'), findsOneWidget);
-    
-    // Check for brush size value display
+    expect(find.textContaining('Size:'), findsOneWidget);
     expect(find.textContaining('px'), findsOneWidget);
   });
 
