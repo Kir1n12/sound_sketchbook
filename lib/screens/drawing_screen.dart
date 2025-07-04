@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'dart:math';
 import '../models/drawing_point.dart';
+import '../models/note.dart';
 import '../widgets/drawing_canvas.dart';
+import '../synth/simple_synth.dart';
 
 class DrawingScreen extends StatefulWidget {
   const DrawingScreen({super.key});
@@ -13,13 +17,35 @@ class _DrawingScreenState extends State<DrawingScreen> {
   List<DrawingStroke> _strokes = [];
   DrawingStroke? _currentStroke;
   int _currentStrokeId = 0;
-  
+  List<DrawingStroke> _redoStack = [];
+
   // Drawing settings
   HSVColor _hsvColor = HSVColor.fromColor(Colors.black);
   double _selectedStrokeWidth = 3.0;
-  
+
   // Get current color from HSV
   Color get _selectedColor => _hsvColor.toColor();
+
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
+  Future<void> _playSample() async {
+    // assets/audio/sample.mp3 を再生（ファイルは後で追加）
+    await _audioPlayer.play(AssetSource('audio/sample.mp3'));
+  }
+
+  Future<void> _playNotesAsSine() async {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final canvasHeight = renderBox?.size.height ?? 1.0;
+    final notes = _strokes.map((s) => strokeToNote(s, canvasHeight)).toList();
+    for (final note in notes) {
+      if (note.duration > 0 && note.pitch > 0) {
+        // MIDIノート番号→周波数変換
+        final freq = 440.0 * pow(2, (note.pitch - 69) / 12);
+        await playSineWave(
+            frequency: freq, duration: note.duration, volume: note.velocity);
+      }
+    }
+  }
 
   void _onPanStart(Offset position) {
     setState(() {
@@ -62,6 +88,23 @@ class _DrawingScreenState extends State<DrawingScreen> {
       _strokes.clear();
       _currentStroke = null;
       _currentStrokeId = 0;
+      _redoStack.clear();
+    });
+  }
+
+  void _undo() {
+    setState(() {
+      if (_strokes.isNotEmpty) {
+        _redoStack.add(_strokes.removeLast());
+      }
+    });
+  }
+
+  void _redo() {
+    setState(() {
+      if (_redoStack.isNotEmpty) {
+        _strokes.add(_redoStack.removeLast());
+      }
     });
   }
 
@@ -89,7 +132,8 @@ class _DrawingScreenState extends State<DrawingScreen> {
     });
   }
 
-  Widget _buildCompactSlider(String emoji, double value, double min, double max, Function(double) onChanged, bool isHue) {
+  Widget _buildCompactSlider(String emoji, double value, double min, double max,
+      Function(double) onChanged, bool isHue) {
     return Row(
       children: [
         Text(emoji, style: const TextStyle(fontSize: 12)),
@@ -99,31 +143,35 @@ class _DrawingScreenState extends State<DrawingScreen> {
             height: 24,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              gradient: isHue 
-                ? const LinearGradient(
-                    colors: [
-                      Colors.red,
-                      Colors.yellow,
-                      Colors.green,
-                      Colors.cyan,
-                      Colors.blue,
-                      Colors.magenta,
-                      Colors.red,
-                    ],
-                  )
-                : emoji == '🎨'
-                  ? LinearGradient(
+              gradient: isHue
+                  ? const LinearGradient(
                       colors: [
-                        Colors.white,
-                        HSVColor.fromAHSV(1.0, _hsvColor.hue, 1.0, _hsvColor.value).toColor(),
+                        Colors.red,
+                        Colors.yellow,
+                        Colors.green,
+                        Colors.cyan,
+                        Colors.blue,
+                        Colors.purple,
+                        Colors.red,
                       ],
                     )
-                  : LinearGradient(
-                      colors: [
-                        Colors.black,
-                        HSVColor.fromAHSV(1.0, _hsvColor.hue, _hsvColor.saturation, 1.0).toColor(),
-                      ],
-                    ),
+                  : emoji == '🎨'
+                      ? LinearGradient(
+                          colors: [
+                            Colors.white,
+                            HSVColor.fromAHSV(
+                                    1.0, _hsvColor.hue, 1.0, _hsvColor.value)
+                                .toColor(),
+                          ],
+                        )
+                      : LinearGradient(
+                          colors: [
+                            Colors.black,
+                            HSVColor.fromAHSV(1.0, _hsvColor.hue,
+                                    _hsvColor.saturation, 1.0)
+                                .toColor(),
+                          ],
+                        ),
             ),
             child: SliderTheme(
               data: SliderTheme.of(context).copyWith(
@@ -161,7 +209,8 @@ class _DrawingScreenState extends State<DrawingScreen> {
           // Title and preview in same row
           Row(
             children: [
-              const Text('🎨 Color', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              const Text('🎨 Color',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               const Spacer(),
               Container(
                 width: 30,
@@ -180,28 +229,50 @@ class _DrawingScreenState extends State<DrawingScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          
+
           // Compact HSV sliders
           _buildCompactSlider('🌈', _hsvColor.hue, 0, 360, _onHueChanged, true),
           const SizedBox(height: 2),
-          _buildCompactSlider('🎨', _hsvColor.saturation * 100, 0, 100, _onSaturationChanged, false),
+          _buildCompactSlider('🎨', _hsvColor.saturation * 100, 0, 100,
+              _onSaturationChanged, false),
           const SizedBox(height: 2),
-          _buildCompactSlider('💡', _hsvColor.value * 100, 0, 100, _onValueChanged, false),
-          
-          // Clear button
+          _buildCompactSlider(
+              '💡', _hsvColor.value * 100, 0, 100, _onValueChanged, false),
+
+          // Clear, Undo, Redo buttons
           const SizedBox(height: 4),
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _clearCanvas,
-              icon: const Icon(Icons.clear, size: 16),
-              label: const Text('Clear', style: TextStyle(fontSize: 10)),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.red[50],
-                foregroundColor: Colors.red[600],
-                minimumSize: const Size(60, 24),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.undo, size: 18),
+                  tooltip: 'Undo',
+                  onPressed: _strokes.isNotEmpty ? _undo : null,
+                  padding: const EdgeInsets.all(0),
+                  constraints: const BoxConstraints(),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.redo, size: 18),
+                  tooltip: 'Redo',
+                  onPressed: _redoStack.isNotEmpty ? _redo : null,
+                  padding: const EdgeInsets.all(0),
+                  constraints: const BoxConstraints(),
+                ),
+                TextButton.icon(
+                  onPressed: _clearCanvas,
+                  icon: const Icon(Icons.clear, size: 16),
+                  label: const Text('Clear', style: TextStyle(fontSize: 10)),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.red[50],
+                    foregroundColor: Colors.red[600],
+                    minimumSize: const Size(60, 24),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -224,16 +295,18 @@ class _DrawingScreenState extends State<DrawingScreen> {
           // Title and size display
           Row(
             children: [
-              const Text('📏 Brush Size', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              const Text('📏 Brush Size',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               const Spacer(),
               Text(
                 '${_selectedStrokeWidth.toStringAsFixed(1)}px',
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
+                style:
+                    const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          
+
           // Brush size slider
           SizedBox(
             height: 24,
@@ -256,11 +329,12 @@ class _DrawingScreenState extends State<DrawingScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          
+
           // Brush size preview
           Row(
             children: [
-              const Text('🔴 Preview:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500)),
+              const Text('🔴 Preview:',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500)),
               const SizedBox(width: 8),
               Container(
                 width: 30,
@@ -288,17 +362,25 @@ class _DrawingScreenState extends State<DrawingScreen> {
     );
   }
 
+  void _printNotes() {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final canvasHeight = renderBox?.size.height ?? 1.0;
+    final notes = _strokes.map((s) => strokeToNote(s, canvasHeight)).toList();
+    for (final note in notes) {
+      print(note);
+    }
+  }
+
   Widget _buildToolbar() {
     return Container(
       color: Colors.grey[100],
-      constraints: const BoxConstraints(maxHeight: 120),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isDesktop = constraints.maxWidth > 600;
-              
+
               if (isDesktop) {
                 return Row(
                   children: [
@@ -313,6 +395,11 @@ class _DrawingScreenState extends State<DrawingScreen> {
                       flex: 2,
                       child: _buildCompactStrokeSelector(),
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.music_note),
+                      tooltip: 'Play as Sine',
+                      onPressed: _playNotesAsSine,
+                    ),
                   ],
                 );
               } else {
@@ -323,6 +410,11 @@ class _DrawingScreenState extends State<DrawingScreen> {
                     _buildCompactColorSelector(),
                     const SizedBox(height: 4),
                     _buildCompactStrokeSelector(),
+                    IconButton(
+                      icon: const Icon(Icons.music_note),
+                      tooltip: 'Play as Sine',
+                      onPressed: _playNotesAsSine,
+                    ),
                   ],
                 );
               }
@@ -351,7 +443,7 @@ class _DrawingScreenState extends State<DrawingScreen> {
               onPanEnd: _onPanEnd,
             ),
           ),
-          
+
           // Toolbar at the bottom
           _buildToolbar(),
         ],
